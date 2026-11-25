@@ -1,0 +1,11 @@
+{
+  "name": "آتلیه نورا | فروشگاه لوکس مد و عطر",
+  "short_name": "آتلیه نورا",
+  "description": "فروشگاه اینترنتی پوشاک زنانه، مردانه، بچه‌گانه و عطرهای اورجینال",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF9F6",
+  "theme_color": "#121212",
+  "dir": "rtl",
+  "lang": "fa"
+}

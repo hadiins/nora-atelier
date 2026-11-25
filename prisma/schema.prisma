@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategorySlug {
+  WOMEN
+  MEN
+  KIDS
+  PERFUME
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  fullName  String?
+  role         String   @default("CUSTOMER")
+  points       Int      @default(0)
+  tier         String   @default("SILVER") // SILVER | GOLD | VIP
+  referralCode String?  @unique
+  orders    Order[]
+  reviews   Review[]
+  createdAt DateTime @default(now())
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  description String
+  category    CategorySlug
+  material    String?          // جنس پارچه یا غلظت عطر (مثلاً کشمیر، EDP)
+  price       Int
+  oldPrice    Int?
+  badge       String?
+  rating      Float            @default(4.8)
+  images      String[]
+  colors      String[]
+  isFeatured  Boolean          @default(false)
+  variants    ProductVariant[]
+  perfumeNote PerfumeNote?
+  reviews     Review[]
+  orderItems  OrderItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     String  // مثلاً M, L یا 100ml, دکانت 5ml
+  price     Int?    // قیمت اختصاصی واریانت (برای دکانت عطر)
+  sku       String  @unique
+  stock     Int     @default(10)
+}
+
+model PerfumeNote {
+  id         String  @id @default(cuid())
+  productId  String  @unique
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  scentGroup String  // woody, spicy, fresh, floral
+  longevity  String  @default("بسیار بالا (۸ تا ۱۲ ساعت)")
+  sillage    String  @default("قوی")
+  season     String  @default("پاییز و زمستان")
+  topNotes   String
+  midNotes   String
+  baseNotes  String
+  batchCode  String?
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  authorName String
+  rating     Int      @default(5)
+  comment    String
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+}
+
+model StockAlert {
+  id        String   @id @default(cuid())
+  productId String
+  variant   String
+  phone     String
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  orderNumber  String      @unique
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
+  customerName String
+  phone        String
+  address      String
+  postalCode   String
+  subtotal     Int
+  discount     Int         @default(0)
+  giftWrapFee    Int         @default(0)
+  shippingCost   Int         @default(0)
+  shippingMethod String      @default("POST") // TEHRAN_COURIER | TIPAX | POST
+  paymentMethod  String      @default("ZARINPAL") // ZARINPAL | BNPL
+  totalAmount  Int
+  promoCode    String?
+  isGiftWrap   Boolean     @default(false)
+  giftMessage  String?
+  trackingCode String?     // کد رهگیری پست/تیپاکس
+  status       OrderStatus @default(PENDING)
+  authority    String?
+  refId        String?
+  items        OrderItem[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  variantName String
+  quantity    Int
+  unitPrice   Int
+}
+
+model PromoCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  discountPct Int
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+}
+
+model GiftCard {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  balance   Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AbandonedCart {
+  id        String   @id @default(cuid())
+  phone     String
+  itemsJson String
+  reminded  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model FeatureFlag {
+  key         String   @id
+  label       String
+  category    String
+  description String
+  isEnabled   Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+model ScentSubscription {
+  id         String   @id @default(cuid())
+  fullName   String
+  phone      String
+  scentPref  String   // woody, spicy, fresh, floral
+  plan       String   @default("MONTHLY_8ML")
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+}
+
+model ConciergeBooking {
+  id          String   @id @default(cuid())
+  fullName    String
+  phone       String
+  topic       String   // استایل رسمی | عطر کلکسیونی | هدیه سازمانی
+  preferredAt String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+}
+
+model LimitedDrop {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  image       String
+  launchAt    DateTime
+  isActive    Boolean  @default(true)
+}
