@@ -1,33 +1,39 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMsg("");
-    const res = await fetch("/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) {
-      setStep("otp");
-      setMsg("کد ۶ رقمی ارسال شد (در حالت توسعه در کنسول سرور چاپ می‌شود).");
-    } else {
-      setMsg(data.error || "خطا در ارسال کد");
+    setError("");
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStep("otp");
+        setMsg(data.message || "کد تایید ارسال شد.");
+        if (data.devCode) setCode(data.devCode);
+      } else {
+        setError(data.error || "خطا در ارسال کد");
+      }
+    } catch {
+      setError("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,17 +41,24 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMsg("");
-    const res = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, code }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) {
-      router.push("/");
-    } else {
-      setMsg(data.error || "کد نامعتبر است");
+    setError("");
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim(), code: code.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMsg("✅ ورود موفقیت‌آمیز! در حال انتقال به پروفایل...");
+        window.location.href = "/profile";
+      } else {
+        setError(data.error || "کد نامعتبر یا منقضی شده است.");
+      }
+    } catch {
+      setError("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,13 +98,14 @@ export default function LoginPage() {
             <button disabled={loading} className="w-full bg-charcoal text-cream py-3.5 rounded-full text-sm font-bold hover:bg-gold transition">
               {loading ? "در حال بررسی..." : "تایید و ورود"}
             </button>
-            <button type="button" onClick={() => setStep("phone")} className="w-full text-xs text-muted hover:text-charcoal">
+            <button type="button" onClick={() => { setStep("phone"); setError(""); setMsg(""); }} className="w-full text-xs text-muted hover:text-charcoal">
               تغییر شماره موبایل
             </button>
           </form>
         )}
 
-        {msg && <p className="text-xs text-center font-semibold text-gold">{msg}</p>}
+        {msg && <p className="text-xs text-center font-bold text-emerald-700 bg-emerald-50 p-3 rounded-2xl">{msg}</p>}
+        {error && <p className="text-xs text-center font-bold text-rose-600 bg-rose-50 p-3 rounded-2xl">{error}</p>}
       </div>
     </div>
   );

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isAdminAuthorized } from "@/lib/adminGuard";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    if (!(await isAdminAuthorized(req))) {
+      return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 401 });
+    }
     const bookings = await prisma.conciergeBooking.findMany({ orderBy: { createdAt: "desc" } });
     return NextResponse.json({ bookings });
   } catch {
@@ -13,8 +17,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { fullName, phone, topic, preferredAt } = await req.json();
-    if (!fullName || !phone || !preferredAt) {
-      return NextResponse.json({ error: "تمام فیلدها را تکمیل کنید" }, { status: 400 });
+    if (!fullName || !phone || !preferredAt || !/^09\d{9}$/.test(phone)) {
+      return NextResponse.json({ error: "تمام فیلدها و شماره موبایل معتبر را وارد کنید" }, { status: 400 });
     }
     const booking = await prisma.conciergeBooking.create({
       data: { fullName, phone, topic: topic || "استایل رسمی", preferredAt },

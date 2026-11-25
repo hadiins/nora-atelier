@@ -2,12 +2,20 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: { variants: true, perfumeNote: true },
-  });
+
+  let product = null;
+  try {
+    product = await prisma.product.findUnique({
+      where: { slug },
+      include: { variants: true, perfumeNote: true },
+    });
+  } catch {
+    product = null;
+  }
 
   if (!product) notFound();
 

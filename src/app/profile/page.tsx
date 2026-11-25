@@ -3,27 +3,48 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const session = await getCurrentUser();
   if (!session) redirect("/login");
 
-  const orders = await prisma.order.findMany({
-    where: { phone: session.phone },
-    orderBy: { createdAt: "desc" },
-    include: { items: { include: { product: true } } },
-  });
+  let orders: {
+    id: string;
+    orderNumber: string;
+    address: string;
+    trackingCode: string | null;
+    totalAmount: number;
+    status: string;
+  }[] = [];
+
+  try {
+    orders = await prisma.order.findMany({
+      where: { phone: session.phone },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    orders = [];
+  }
 
   return (
     <div className="min-h-screen bg-sand py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="bg-white p-6 rounded-3xl flex items-center justify-between border border-black/5">
+        <div className="bg-white p-6 rounded-3xl flex flex-wrap items-center justify-between gap-4 border border-black/5">
           <div>
             <h1 className="text-xl font-black">پروفایل کاربری شما</h1>
             <p className="text-xs text-muted mt-1" dir="ltr">{session.phone}</p>
           </div>
-          <Link href="/" className="bg-charcoal text-cream px-5 py-2.5 rounded-full text-xs font-bold">
-            فروشگاه
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="bg-charcoal text-cream px-5 py-2.5 rounded-full text-xs font-bold hover:bg-gold transition">
+              بازگشت به فروشگاه
+            </Link>
+            <form action="/api/admin/login" method="DELETE">
+              <Link href="/login" className="bg-sand px-4 py-2.5 rounded-full text-xs font-bold hover:bg-black/10 transition">
+                تغییر حساب
+              </Link>
+            </form>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-4">
