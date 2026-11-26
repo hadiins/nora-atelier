@@ -10,6 +10,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "سفارش پیدا نشد" }, { status: 404 });
     }
 
+    // تشخیص خودکار دامنه واقعی سایت (جلوگیری از بازگشت اشتباه به localhost روی Vercel)
+    const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const siteUrl =
+      envUrl && !envUrl.includes("localhost")
+        ? envUrl.replace(/\/$/, "")
+        : req.nextUrl.origin;
+
     const isSandbox = process.env.ZARINPAL_SANDBOX === "true";
     const baseUrl = isSandbox
       ? "https://sandbox.zarinpal.com/pg/v4/payment/request.json"
@@ -20,8 +27,8 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         merchant_id: process.env.ZARINPAL_MERCHANT_ID,
-        amount: order.totalAmount * 10, // تبدیل تومان به ریال
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/verify?orderId=${order.id}`,
+        amount: order.totalAmount * 10,
+        callback_url: `${siteUrl}/payment/verify?orderId=${order.id}`,
         description: `پرداخت سفارش ${order.orderNumber} از آتلیه نورا`,
         metadata: { mobile: order.phone },
       }),
