@@ -62,6 +62,7 @@ export default function StorefrontClient({
   const [tryOnImage, setTryOnImage] = useState<string | null>(null);
   const [scentType, setScentType] = useState<"woody" | "spicy">("woody");
   const [visibleCount, setVisibleCount] = useState(8);
+  const [priceRange, setPriceRange] = useState<"ALL" | "UNDER_2M" | "2M_6M" | "OVER_6M">("ALL");
 
   const { items, isCartOpen, toggleCart, addItem, updateQty, applyPromo, discountPct } = useCartStore();
 
@@ -84,13 +85,18 @@ export default function StorefrontClient({
     const list = initialProducts.filter((p) => {
       const matchCat = category === "ALL" || p.category === category;
       const matchSearch = p.name.includes(search) || p.description.includes(search);
-      return matchCat && matchSearch;
+      const matchPrice =
+        priceRange === "ALL" ||
+        (priceRange === "UNDER_2M" && p.price < 2000000) ||
+        (priceRange === "2M_6M" && p.price >= 2000000 && p.price <= 6000000) ||
+        (priceRange === "OVER_6M" && p.price > 6000000);
+      return matchCat && matchSearch && matchPrice;
     });
     if (sort === "price-asc") return [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") return [...list].sort((a, b) => b.price - a.price);
     if (sort === "rating") return [...list].sort((a, b) => b.rating - a.rating);
     return list;
-  }, [initialProducts, category, search, sort]);
+  }, [initialProducts, category, search, sort, priceRange]);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const discount = Math.round((subtotal * discountPct) / 100);
@@ -278,12 +284,20 @@ export default function StorefrontClient({
             ))}
           </div>
 
+          <div className="flex items-center gap-2">
+          <select value={priceRange} onChange={(e) => setPriceRange(e.target.value as typeof priceRange)} className="bg-white border border-black/10 rounded-full px-4 py-2 text-xs font-semibold">
+            <option value="ALL">همه قیمت‌ها</option>
+            <option value="UNDER_2M">زیر ۲ میلیون</option>
+            <option value="2M_6M">۲ تا ۶ میلیون</option>
+            <option value="OVER_6M">بالای ۶ میلیون</option>
+          </select>
           <select value={sort} onChange={(e) => setSort(e.target.value)} className="bg-white border border-black/10 rounded-full px-4 py-2 text-xs font-semibold">
             <option value="featured">پیشنهاد ویژه</option>
             <option value="price-asc">ارزان‌ترین</option>
             <option value="price-desc">گران‌ترین</option>
             <option value="rating">محبوب‌ترین</option>
           </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
@@ -389,6 +403,10 @@ export default function StorefrontClient({
             {flags.gift_box_builder && <Link href="/gift-box" className="hover:text-goldLight">باکس هدیه</Link>}
             {flags.scent_club && <Link href="/scent-club" className="hover:text-goldLight">باشگاه عطر</Link>}
             {flags.concierge_video && <Link href="/concierge" className="hover:text-goldLight">مشاوره VIP</Link>}
+            <Link href="/track-order" className="hover:text-goldLight">پیگیری سفارش</Link>
+            <Link href="/faq" className="hover:text-goldLight">سوالات متداول</Link>
+            <Link href="/about" className="hover:text-goldLight">درباره ما</Link>
+            <Link href="/contact" className="hover:text-goldLight">تماس با ما</Link>
             <Link href="/admin" className="hover:text-goldLight">پنل مدیریت</Link>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import ProductReviewsAndAlerts from "@/components/ProductReviewsAndAlerts";
 import ProductGallery from "@/components/ProductGallery";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -12,7 +13,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   try {
     product = await prisma.product.findUnique({
       where: { slug },
-      include: { variants: true, perfumeNote: true },
+      include: { variants: true, perfumeNote: true, reviews: { where: { isApproved: true }, orderBy: { createdAt: "desc" } } },
     });
   } catch {
     product = null;
@@ -63,6 +64,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </Link>
           </div>
         </div>
+        <ProductReviewsAndAlerts
+          productId={product.id}
+          category={product.category}
+          initialReviews={product.reviews}
+          hasOutOfStock={product.variants.some((v) => v.stock === 0) || true}
+        />
       </div>
     </div>
   );
