@@ -12,6 +12,9 @@ export interface SiteSettingsData {
   footerText: string;
   supportPhone: string;
   instagramUrl: string;
+  metaTitle: string;
+  metaDescription: string;
+  enamadCode: string;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettingsData = {
@@ -26,6 +29,9 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsData = {
   footerText: "© ۲۰۲۵ آتلیه نورا | فروشگاه لوکس پوشاک و عطر (بدون ووکامرس)",
   supportPhone: "021-22000000",
   instagramUrl: "https://instagram.com",
+  metaTitle: "آتلیه نورا | فروشگاه لوکس پوشاک و عطر",
+  metaDescription: "فروشگاه تخصصی پوشاک زنانه، مردانه، بچه‌گانه و عطرهای اورجینال با ضمانت اصالت",
+  enamadCode: "",
 };
 
 export async function getSiteSettings(): Promise<SiteSettingsData> {

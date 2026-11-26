@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"settings" | "products" | "promos" | "features" | "orders" | "dashboard">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "products" | "promos" | "features" | "orders" | "crm" | "dashboard">("settings");
   const [settings, setSettings] = useState<SiteSettingsData>(DEFAULT_SITE_SETTINGS);
   const [settingsMsg, setSettingsMsg] = useState("");
 
@@ -89,6 +89,10 @@ export default function AdminDashboard() {
   // فرم کد تخفیف
   const [promoCode, setPromoCode] = useState("");
   const [promoPct, setPromoPct] = useState("20");
+  const [reviews, setReviews] = useState<{ id: string; authorName: string; rating: number; comment: string; isApproved: boolean; product?: { name: string } }[]>([]);
+  const [customers, setCustomers] = useState<{ id: string; phone: string; fullName: string | null; tier: string; points: number; _count?: { orders: number } }[]>([]);
+  const [bulkCat, setBulkCat] = useState("ALL");
+  const [bulkPct, setBulkPct] = useState("20");
 
   const loadAdminData = () => {
     fetch("/api/admin/settings").then((r) => r.json()).then((d) => d.settings && setSettings(d.settings)).catch(() => {});
@@ -99,6 +103,8 @@ export default function AdminDashboard() {
     fetch("/api/admin/analytics").then((r) => r.json()).then((d) => setAnalytics(d)).catch(() => {});
     fetch("/api/scent-club").then((r) => r.json()).then((d) => setSubsCount((d.subscriptions || []).length)).catch(() => {});
     fetch("/api/concierge").then((r) => r.json()).then((d) => setBookingsCount((d.bookings || []).length)).catch(() => {});
+    fetch("/api/reviews").then((r) => r.json()).then((d) => setReviews(d.reviews || [])).catch(() => {});
+    fetch("/api/admin/customers").then((r) => r.json()).then((d) => setCustomers(d.users || [])).catch(() => {});
   };
 
   useEffect(() => {
@@ -252,6 +258,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <a href="/api/admin/analytics?format=csv" className="bg-white/10 px-4 py-2 rounded-full text-xs font-bold hover:bg-white/20 transition">خروجی اکسل</a>
+            <a href="/api/admin/backup" className="bg-white/10 px-4 py-2 rounded-full text-xs font-bold hover:bg-white/20 transition">بکاپ کامل (JSON)</a>
             <Link href="/" className="bg-goldLight text-obsidian px-5 py-2 rounded-full text-xs font-black hover:bg-white transition">مشاهده سایت</Link>
             <button onClick={async () => { await fetch("/api/admin/login", { method: "DELETE" }); setIsAdmin(false); }} className="bg-rose-600/80 text-white px-4 py-2 rounded-full text-xs font-bold">خروج</button>
           </div>
@@ -265,6 +272,7 @@ export default function AdminDashboard() {
             { id: "promos", label: "🏷️ کدهای تخفیف" },
             { id: "features", label: "🎛️ کنترل امکانات (۱۷ قابلیت)" },
             { id: "orders", label: "📦 سفارش‌ها و رهگیری" },
+            { id: "crm", label: "💬 نظرات و مشتریان" },
             { id: "dashboard", label: "📊 آمار فروش" },
           ].map((t) => (
             <button
@@ -330,6 +338,18 @@ export default function AdminDashboard() {
                 <label className="font-bold block mb-1">شماره تماس پشتیبانی</label>
                 <input dir="ltr" value={settings.supportPhone} onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })} className="w-full bg-sand rounded-xl px-4 py-2.5" />
               </div>
+              <div>
+                <label className="font-bold block mb-1">عنوان سئو (Meta Title)</label>
+                <input value={settings.metaTitle || ""} onChange={(e) => setSettings({ ...settings, metaTitle: e.target.value })} className="w-full bg-sand rounded-xl px-4 py-2.5" />
+              </div>
+              <div>
+                <label className="font-bold block mb-1">توضیحات سئو (Meta Description)</label>
+                <input value={settings.metaDescription || ""} onChange={(e) => setSettings({ ...settings, metaDescription: e.target.value })} className="w-full bg-sand rounded-xl px-4 py-2.5" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="font-bold block mb-1">کد HTML نماد اعتماد الکترونیکی (اینماد)</label>
+                <textarea dir="ltr" rows={2} value={settings.enamadCode || ""} onChange={(e) => setSettings({ ...settings, enamadCode: e.target.value })} placeholder="<a ...><img .../></a>" className="w-full bg-sand rounded-xl px-4 py-2.5" />
+              </div>
             </div>
             <button type="submit" className="bg-charcoal text-cream px-8 py-3.5 rounded-full text-sm font-bold hover:bg-gold transition">
               ذخیره و انتشار تغییرات در سایت
@@ -389,6 +409,30 @@ export default function AdminDashboard() {
             </form>
 
             <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-black/5 space-y-4">
+              <div className="p-4 rounded-2xl bg-obsidian text-cream flex flex-wrap items-center justify-between gap-3 text-xs">
+                <span className="font-bold text-goldLight">تخفیف گروهی (کمپین):</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select value={bulkCat} onChange={(e) => setBulkCat(e.target.value)} className="bg-charcoal border border-white/15 rounded-full px-3 py-1.5">
+                    <option value="ALL">همه دسته‌ها</option>
+                    <option value="WOMEN">زنانه</option>
+                    <option value="MEN">مردانه</option>
+                    <option value="KIDS">بچه‌گانه</option>
+                    <option value="PERFUME">عطر و ادکلن</option>
+                  </select>
+                  <input type="number" min={0} max={90} value={bulkPct} onChange={(e) => setBulkPct(e.target.value)} className="w-20 bg-charcoal border border-white/15 rounded-full px-3 py-1.5 text-center" />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await fetch("/api/admin/bulk-discount", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: bulkCat, discountPct: Number(bulkPct) }) });
+                      loadAdminData();
+                      setProductMsg("✅ تخفیف گروهی اعمال شد (عدد ۰ برای لغو تخفیف).");
+                    }}
+                    className="bg-goldLight text-obsidian px-4 py-1.5 rounded-full font-black"
+                  >
+                    اعمال ٪
+                  </button>
+                </div>
+              </div>
               <h2 className="font-bold text-base">مدیریت و تخفیف‌گذاری محصولات ({products.length})</h2>
               <div className="space-y-3 max-h-[520px] overflow-y-auto">
                 {products.map((p) => (
@@ -534,6 +578,53 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab: CRM & Reviews */}
+        {activeTab === "crm" && (
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-3">
+              <h2 className="font-bold text-base">مدیریت نظرات مشتریان ({reviews.length})</h2>
+              {reviews.length === 0 ? <p className="text-xs text-muted">هنوز نظری ثبت نشده است.</p> : reviews.map((rv) => (
+                <div key={rv.id} className="p-3 bg-sand rounded-2xl text-xs space-y-2">
+                  <div className="flex justify-between font-bold">
+                    <span>{rv.authorName} ({rv.product?.name})</span>
+                    <span className="text-gold">★ {rv.rating}</span>
+                  </div>
+                  <p className="text-muted">{rv.comment}</p>
+                  <div className="flex gap-2">
+                    <button onClick={async () => { await fetch("/api/reviews", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rv.id, isApproved: !rv.isApproved }) }); loadAdminData(); }} className={`px-3 py-1 rounded-full font-bold ${rv.isApproved ? "bg-emerald-100 text-emerald-700" : "bg-white"}`}>
+                      {rv.isApproved ? "تایید شده" : "تایید نمایش"}
+                    </button>
+                    <button onClick={async () => { await fetch(`/api/reviews?id=${rv.id}`, { method: "DELETE" }); loadAdminData(); }} className="text-rose-600 font-bold px-2">حذف</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-3">
+              <h2 className="font-bold text-base">باشگاه مشتریان ({customers.length})</h2>
+              {customers.length === 0 ? <p className="text-xs text-muted">هنوز کاربری ثبت‌نام نکرده است.</p> : customers.map((c) => (
+                <div key={c.id} className="p-3 bg-sand rounded-2xl flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-bold" dir="ltr">{c.phone}</p>
+                    <span className="text-[10px] text-muted">سفارش‌ها: {c._count?.orders || 0} • امتیاز: {c.points}</span>
+                  </div>
+                  <select
+                    value={c.tier}
+                    onChange={async (e) => {
+                      await fetch("/api/admin/customers", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id, tier: e.target.value }) });
+                      loadAdminData();
+                    }}
+                    className="bg-white rounded-full px-3 py-1 font-bold border border-black/10"
+                  >
+                    <option value="SILVER">SILVER</option>
+                    <option value="GOLD">GOLD</option>
+                    <option value="VIP">VIP</option>
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

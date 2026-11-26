@@ -61,6 +61,7 @@ export default function StorefrontClient({
   const [showSizeFinder, setShowSizeFinder] = useState(false);
   const [tryOnImage, setTryOnImage] = useState<string | null>(null);
   const [scentType, setScentType] = useState<"woody" | "spicy">("woody");
+  const [visibleCount, setVisibleCount] = useState(8);
 
   const { items, isCartOpen, toggleCart, addItem, updateQty, applyPromo, discountPct } = useCartStore();
 
@@ -286,7 +287,7 @@ export default function StorefrontClient({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-          {filteredProducts.map((p) => {
+          {filteredProducts.slice(0, visibleCount).map((p) => {
             const wished = wishlist.includes(p.id);
             return (
               <div key={p.id} className="group bg-white rounded-3xl overflow-hidden border border-black/5 shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col justify-between">
@@ -338,6 +339,13 @@ export default function StorefrontClient({
             );
           })}
         </div>
+        {filteredProducts.length > visibleCount && (
+          <div className="text-center mt-10">
+            <button onClick={() => setVisibleCount((v) => v + 8)} className="bg-charcoal text-cream px-8 py-3 rounded-full text-xs font-bold hover:bg-gold transition">
+              نمایش محصولات بیشتر ({(filteredProducts.length - visibleCount).toLocaleString("fa-IR")} محصول دیگر)
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Dark Luxury Scent Finder Section */}
@@ -373,7 +381,10 @@ export default function StorefrontClient({
       {/* Footer */}
       <footer className="bg-obsidian text-cream pt-12 pb-8 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/60">
-          <span>{settings.footerText} • پشتیبانی: {settings.supportPhone}</span>
+          <div className="flex items-center gap-4">
+            <span>{settings.footerText} • پشتیبانی: {settings.supportPhone}</span>
+            {settings.enamadCode && <div className="bg-white rounded-xl p-1" dangerouslySetInnerHTML={{ __html: settings.enamadCode }} />}
+          </div>
           <div className="flex gap-4">
             {flags.gift_box_builder && <Link href="/gift-box" className="hover:text-goldLight">باکس هدیه</Link>}
             {flags.scent_club && <Link href="/scent-club" className="hover:text-goldLight">باشگاه عطر</Link>}

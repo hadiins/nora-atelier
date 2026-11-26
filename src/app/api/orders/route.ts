@@ -120,6 +120,13 @@ export async function PATCH(req: NextRequest) {
         ...(trackingCode !== undefined ? { trackingCode } : {}),
       },
     });
+    if (trackingCode && order.phone) {
+      if (process.env.KAVENEGAR_API_KEY) {
+        await fetch(`https://api.kavenegar.com/v1/${process.env.KAVENEGAR_API_KEY}/verify/lookup.json?receptor=${order.phone}&token=${trackingCode}&template=tracking`).catch(() => {});
+      } else {
+        console.log(`📦 [SMS TRACKING] To: ${order.phone} | Order: ${order.orderNumber} | Tracking: ${trackingCode}`);
+      }
+    }
     return NextResponse.json({ order });
   } catch {
     return NextResponse.json({ error: "خطا در به‌روزرسانی سفارش" }, { status: 500 });

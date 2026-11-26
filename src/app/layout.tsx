@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 import AiStylistWidget from "@/components/AiStylistWidget";
 import { getFeatureFlagsMap } from "@/lib/features";
+import { getSiteSettings } from "@/lib/settings";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -9,11 +10,14 @@ const vazirmatn = Vazirmatn({
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
-export const metadata: Metadata = {
-  title: "آتلیه نورا | فروشگاه لوکس پوشاک و عطر",
-  description: "فروشگاه تخصصی پوشاک زنانه، مردانه، بچه‌گانه و عطرهای اورجینال",
-  manifest: "/manifest.json",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: settings.metaTitle,
+    description: settings.metaDescription,
+    manifest: "/manifest.json",
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const flags = await getFeatureFlagsMap();
