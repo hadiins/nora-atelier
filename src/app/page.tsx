@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import StorefrontClient from "@/components/StorefrontClient";
 import { ProductDTO } from "@/types/store";
 import { getFeatureFlagsMap } from "@/lib/features";
+import { getSiteSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +185,7 @@ const FALLBACK_PRODUCTS: ProductDTO[] = [
 export default async function HomePage() {
   let products: ProductDTO[] = [];
   const flags = await getFeatureFlagsMap();
+  const settings = await getSiteSettings();
 
   try {
     const dbProducts = await prisma.product.findMany({
@@ -195,5 +197,5 @@ export default async function HomePage() {
     products = FALLBACK_PRODUCTS;
   }
 
-  return <StorefrontClient initialProducts={products} flags={flags} />;
+  return <StorefrontClient initialProducts={products} flags={flags} settings={settings} />;
 }

@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cartStore";
 import SizeFinderModal from "./SizeFinderModal";
 import VirtualTryOnModal from "./VirtualTryOnModal";
 import ScentPyramid from "./ScentPyramid";
+import { SiteSettingsData } from "@/lib/settings";
 
 const formatPrice = (num: number) => `${num.toLocaleString("fa-IR")} تومان`;
 
@@ -41,9 +42,11 @@ const HERO_SLIDES = [
 export default function StorefrontClient({
   initialProducts,
   flags,
+  settings,
 }: {
   initialProducts: ProductDTO[];
   flags: Record<string, boolean>;
+  settings: SiteSettingsData;
 }) {
   const [category, setCategory] = useState<CategoryType>("ALL");
   const [search, setSearch] = useState("");
@@ -96,9 +99,7 @@ export default function StorefrontClient({
     <div className="min-h-screen flex flex-col bg-cream text-charcoal">
       {/* Announcement */}
       <div className="bg-obsidian text-cream text-[11px] sm:text-xs py-2.5 px-4 text-center border-b border-white/10">
-        <span>ارسال اکسپرس رایگان برای سفارش‌های بالای ۳,۰۰۰,۰۰۰ تومان</span>
-        <span className="mx-2 text-goldLight">•</span>
-        <span>کد تخفیف ویژه ۲۰٪: <strong className="text-goldLight font-bold">LUX20</strong></span>
+        <span>{settings.announcementText}</span>
       </div>
 
       {/* Header */}
@@ -107,8 +108,8 @@ export default function StorefrontClient({
           <Link href="/" className="flex items-center gap-3 group shrink-0">
             <div className="w-10 h-10 rounded-full bg-charcoal text-cream flex items-center justify-center font-black text-lg group-hover:bg-gold transition">ن</div>
             <div>
-              <span className="text-xl font-black block leading-none">آتلیه نورا</span>
-              <span className="text-[10px] text-muted tracking-[0.2em] uppercase">NORA ATELIER</span>
+              <span className="text-xl font-black block leading-none">{settings.brandName}</span>
+              <span className="text-[10px] text-muted tracking-[0.2em] uppercase">{settings.brandSubtitle}</span>
             </div>
           </Link>
 
@@ -166,13 +167,13 @@ export default function StorefrontClient({
           <div className="lg:col-span-6 space-y-6">
             <div className="inline-flex items-center gap-2 bg-white/90 px-4 py-1.5 rounded-full text-xs border border-black/5 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-gold" />
-              <span>{slide.tag}</span>
+              <span>{heroIdx === 0 ? settings.heroTag : slide.tag}</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.2]">
-              {slide.title}<br />
-              <span className="text-gold">{slide.highlight}</span>
+              {heroIdx === 0 ? settings.heroTitle : slide.title}<br />
+              <span className="text-gold">{heroIdx === 0 ? settings.heroHighlight : slide.highlight}</span>
             </h1>
-            <p className="text-muted text-base sm:text-lg max-w-xl leading-relaxed">{slide.desc}</p>
+            <p className="text-muted text-base sm:text-lg max-w-xl leading-relaxed">{heroIdx === 0 ? settings.heroDesc : slide.desc}</p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <a href="#catalog" className="bg-charcoal text-cream px-7 py-3.5 rounded-full text-sm font-bold hover:bg-gold transition shadow-xl">
@@ -198,7 +199,7 @@ export default function StorefrontClient({
 
           <div className="lg:col-span-6 grid grid-cols-12 gap-4 items-center">
             <div className="col-span-7 rounded-[2rem] overflow-hidden aspect-[3/4] shadow-2xl bg-white relative">
-              <img src={slide.img} alt={slide.cardTitle} className="w-full h-full object-cover transition duration-700" />
+              <img src={heroIdx === 0 ? settings.heroImage : slide.img} alt={slide.cardTitle} className="w-full h-full object-cover transition duration-700" />
               <div className="absolute bottom-4 right-4 left-4 bg-cream/85 backdrop-blur p-3.5 rounded-2xl flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-muted">انتخاب سردبیر مد</p>
@@ -315,7 +316,10 @@ export default function StorefrontClient({
                     {p.name}
                   </Link>
                   <div className="flex items-center justify-between pt-1">
-                    <span className="font-black text-sm">{formatPrice(p.price)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-sm">{formatPrice(p.price)}</span>
+                      {p.oldPrice && <span className="text-[11px] text-muted line-through">{formatPrice(p.oldPrice)}</span>}
+                    </div>
                     <button
                       onClick={() => {
                         const v = p.variants[0]?.label || "استاندارد";
@@ -367,7 +371,7 @@ export default function StorefrontClient({
       {/* Footer */}
       <footer className="bg-obsidian text-cream pt-12 pb-8 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/60">
-          <span>© ۲۰۲۵ آتلیه نورا | فروشگاه لوکس پوشاک و عطر (بدون ووکامرس)</span>
+          <span>{settings.footerText} • پشتیبانی: {settings.supportPhone}</span>
           <div className="flex gap-4">
             {flags.gift_box_builder && <Link href="/gift-box" className="hover:text-goldLight">باکس هدیه</Link>}
             {flags.scent_club && <Link href="/scent-club" className="hover:text-goldLight">باشگاه عطر</Link>}
