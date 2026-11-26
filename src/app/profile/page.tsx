@@ -1,3 +1,4 @@
+import ProfileForm from "@/components/ProfileForm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -9,6 +10,7 @@ export default async function ProfilePage() {
   const session = await getCurrentUser();
   if (!session) redirect("/login");
 
+  let userProfile: { fullName: string | null; defaultAddress: string | null; defaultPostalCode: string | null } | null = null;
   let orders: {
     id: string;
     orderNumber: string;
@@ -19,6 +21,10 @@ export default async function ProfilePage() {
   }[] = [];
 
   try {
+    userProfile = await prisma.user.findUnique({
+      where: { phone: session.phone },
+      select: { fullName: true, defaultAddress: true, defaultPostalCode: true },
+    });
     orders = await prisma.order.findMany({
       where: { phone: session.phone },
       orderBy: { createdAt: "desc" },
@@ -46,6 +52,12 @@ export default async function ProfilePage() {
             </form>
           </div>
         </div>
+
+        <ProfileForm
+          initialName={userProfile?.fullName || ""}
+          initialAddress={userProfile?.defaultAddress || ""}
+          initialPostalCode={userProfile?.defaultPostalCode || ""}
+        />
 
         <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-4">
           <h2 className="font-bold text-base">تاریخچه سفارش‌ها</h2>

@@ -82,9 +82,26 @@ export async function POST(req: NextRequest) {
     const totalAmount = Math.max(0, subtotal - discount + giftWrapFee);
     const orderNumber = `NORA-${Date.now().toString().slice(-6)}`;
 
+    // ذخیره خودکار مشخصات و نشانی مشتری در پروفایل برای خریدهای بعدی
+    const customerUser = await prisma.user.upsert({
+      where: { phone },
+      update: {
+        fullName: String(customerName).slice(0, 100),
+        defaultAddress: String(address).slice(0, 400),
+        defaultPostalCode: String(postalCode || "").slice(0, 12),
+      },
+      create: {
+        phone,
+        fullName: String(customerName).slice(0, 100),
+        defaultAddress: String(address).slice(0, 400),
+        defaultPostalCode: String(postalCode || "").slice(0, 12),
+      },
+    });
+
     const order = await prisma.order.create({
       data: {
         orderNumber,
+        userId: customerUser.id,
         customerName: String(customerName).slice(0, 100),
         phone,
         address: String(address).slice(0, 400),

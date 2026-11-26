@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 
@@ -14,6 +14,22 @@ export default function CheckoutPage() {
   const [giftMessage, setGiftMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [savedNotice, setSavedNotice] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.user) {
+          if (d.user.fullName) setCustomerName(d.user.fullName);
+          if (d.user.phone) setPhone(d.user.phone);
+          if (d.user.defaultAddress) setAddress(d.user.defaultAddress);
+          if (d.user.defaultPostalCode) setPostalCode(d.user.defaultPostalCode);
+          setSavedNotice(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const discount = Math.round((subtotal * discountPct) / 100);
@@ -69,7 +85,7 @@ export default function CheckoutPage() {
       <div className="max-w-4xl mx-auto grid md:grid-cols-12 gap-8">
         <form onSubmit={handleSubmit} className="md:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-black/5 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-black">اطلاعات ارسال و بسته‌بندی</h1>
+            <div><h1 className="text-xl font-black">اطلاعات ارسال و بسته‌بندی</h1>{savedNotice && <p className="text-[11px] text-emerald-700 font-bold mt-0.5">✓ مشخصات و نشانی از پروفایل شما بارگذاری شد</p>}</div>
             <Link href="/" className="text-xs text-muted hover:text-charcoal">بازگشت</Link>
           </div>
           <input required value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="نام و نام خانوادگی" className="w-full bg-sand rounded-xl px-4 py-3 text-sm" />
