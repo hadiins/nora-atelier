@@ -1,3 +1,4 @@
+import ProductGallery from "@/components/ProductGallery";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -27,9 +28,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </Link>
 
         <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-black/5 grid md:grid-cols-2">
-          <div className="aspect-[4/5] bg-sand">
-            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-          </div>
+          <ProductGallery images={product.images} name={product.name} />
           <div className="p-8 sm:p-10 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <span className="text-xs font-bold text-gold uppercase">{product.category}</span>

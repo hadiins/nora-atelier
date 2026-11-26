@@ -35,11 +35,29 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const safeName = `${crypto.randomUUID()}.${ext}`;
+
+    // اگر Vercel Blob فعال باشد، فایل دائمی در فضای ابری ذخیره می‌شود
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blobRes = await fetch(`https://blob.vercel-storage.com/${safeName}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+          "content-type": file.type,
+        },
+        body: buffer,
+      });
+      if (blobRes.ok) {
+        const blobData = await blobRes.json();
+        return NextResponse.json({ url: blobData.url, storage: "vercel-blob" });
+      }
+    }
+
+    // ذخیره روی سرور شخصی (VPS / Local) در پوشه public/uploads
     const uploadDir = path.join(process.cwd(), "public", "uploads");
     await mkdir(uploadDir, { recursive: true });
     await writeFile(path.join(uploadDir, safeName), buffer);
 
-    return NextResponse.json({ url: `/uploads/${safeName}` });
+    return NextResponse.json({ url: `/uploads/${safeName}`, storage: "local" });
   } catch (error) {
     console.error("upload error:", error);
     return NextResponse.json({ error: "خطا در آپلود تصویر" }, { status: 500 });

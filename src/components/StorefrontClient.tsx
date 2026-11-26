@@ -54,6 +54,7 @@ export default function StorefrontClient({
   const [heroIdx, setHeroIdx] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<ProductDTO | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string>("");
+  const [modalImgIdx, setModalImgIdx] = useState(0);
   const [promoInput, setPromoInput] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -292,6 +293,7 @@ export default function StorefrontClient({
                 <div
                   onClick={() => {
                     setSelectedProduct(p);
+                    setModalImgIdx(0);
                     setSelectedVariant(p.variants[0]?.label || "استاندارد");
                   }}
                   className="relative aspect-[4/5] bg-sand overflow-hidden cursor-pointer"
@@ -388,7 +390,18 @@ export default function StorefrontClient({
             <button onClick={() => setSelectedProduct(null)} className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-white flex items-center justify-center shadow">
               <X className="w-5 h-5" />
             </button>
-            <img src={selectedProduct.images[0]} alt={selectedProduct.name} className="w-full h-full object-cover aspect-[4/5]" />
+            <div className="bg-sand flex flex-col justify-between p-3 gap-2">
+              <img src={selectedProduct.images[modalImgIdx] || selectedProduct.images[0]} alt={selectedProduct.name} className="w-full h-full object-cover rounded-2xl aspect-[4/5]" />
+              {selectedProduct.images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto">
+                  {selectedProduct.images.map((img, i) => (
+                    <button key={i} onClick={() => setModalImgIdx(i)} className={`w-12 h-14 rounded-xl overflow-hidden border-2 shrink-0 ${modalImgIdx === i ? "border-gold" : "border-transparent opacity-70"}`}>
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="p-6 sm:p-8 flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <span className="text-xs font-bold text-gold">{selectedProduct.category}</span>

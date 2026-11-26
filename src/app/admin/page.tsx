@@ -68,6 +68,22 @@ export default function AdminDashboard() {
   const [price, setPrice] = useState("");
   const [oldPrice, setOldPrice] = useState("");
   const [badge, setBadge] = useState("");
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (file: File, onSuccess: (url: string) => void) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    setUploading(false);
+    if (res.ok && data.url) {
+      onSuccess(data.url);
+    } else {
+      alert(data.error || "خطا در آپلود تصویر");
+    }
+  };
   const [productMsg, setProductMsg] = useState("");
 
   // فرم کد تخفیف
@@ -138,13 +154,13 @@ export default function AdminDashboard() {
         price: Number(price),
         oldPrice: oldPrice ? Number(oldPrice) : null,
         badge: badge || null,
-        images: ["https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=700&q=80"],
+        images: productImages.length > 0 ? productImages : ["/uploads/placeholder.jpg"],
         variants: [{ label: category === "PERFUME" ? "100ml" : "M", sku: `SKU-${Date.now()}`, stock: 10 }],
       }),
     });
     if (res.ok) {
       setProductMsg("✅ محصول جدید اضافه شد.");
-      setName(""); setPrice(""); setOldPrice(""); setBadge("");
+      setName(""); setPrice(""); setOldPrice(""); setBadge(""); setProductImages([]);
       loadAdminData();
     } else {
       setProductMsg("❌ خطا در ذخیره محصول.");
@@ -293,8 +309,14 @@ export default function AdminDashboard() {
                 <input value={settings.heroHighlight} onChange={(e) => setSettings({ ...settings, heroHighlight: e.target.value })} className="w-full bg-sand rounded-xl px-4 py-2.5" />
               </div>
               <div>
-                <label className="font-bold block mb-1">لینک تصویر اصلی هیرو</label>
-                <input dir="ltr" value={settings.heroImage} onChange={(e) => setSettings({ ...settings, heroImage: e.target.value })} className="w-full bg-sand rounded-xl px-4 py-2.5" />
+                <label className="font-bold block mb-1">تصویر اصلی هیرو (آپلود مستقیم یا آدرس)</label>
+                <div className="flex gap-2 items-center">
+                  <input dir="ltr" value={settings.heroImage} onChange={(e) => setSettings({ ...settings, heroImage: e.target.value })} className="flex-1 bg-sand rounded-xl px-4 py-2.5" />
+                  <label className="cursor-pointer bg-charcoal text-cream px-4 py-2.5 rounded-xl font-bold whitespace-nowrap hover:bg-gold transition">
+                    {uploading ? "..." : "آپلود عکس"}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], (url) => setSettings({ ...settings, heroImage: url }))} />
+                  </label>
+                </div>
               </div>
               <div className="sm:col-span-2">
                 <label className="font-bold block mb-1">توضیحات صفحه اصلی (Hero Description)</label>
@@ -331,6 +353,37 @@ export default function AdminDashboard() {
               <input required type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="قیمت فروش (تومان)" className="w-full bg-sand rounded-xl px-4 py-2.5 text-xs" />
               <input type="number" value={oldPrice} onChange={(e) => setOldPrice(e.target.value)} placeholder="قیمت قبل از تخفیف (اختیاری)" className="w-full bg-sand rounded-xl px-4 py-2.5 text-xs" />
               <input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="نشان محصول (مثلاً ۲۰٪ تخفیف / جدید)" className="w-full bg-sand rounded-xl px-4 py-2.5 text-xs" />
+              <div className="space-y-2">
+                <label className="block cursor-pointer bg-sand border border-dashed border-black/20 rounded-xl px-4 py-3 text-center text-xs font-bold hover:border-gold transition">
+                  {uploading ? "در حال آپلود..." : "+ افزودن یک یا چند تصویر برای محصول"}
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      for (const f of files) {
+                        await handleFileUpload(f, (url) => setProductImages((prev) => [...prev, url]));
+                      }
+                    }}
+                  />
+                </label>
+                {productImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {productImages.map((img, i) => (
+                      <div key={i} className="relative w-14 h-16 rounded-xl overflow-hidden border border-black/10">
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setProductImages((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-0.5 right-0.5 bg-black/70 text-white w-4 h-4 rounded-full text-[10px] flex items-center justify-center"
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button type="submit" className="w-full bg-charcoal text-cream py-3 rounded-full text-xs font-bold hover:bg-gold transition">ذخیره محصول</button>
               {productMsg && <p className="text-xs font-bold text-emerald-700">{productMsg}</p>}
             </form>
